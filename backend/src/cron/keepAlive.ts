@@ -44,7 +44,6 @@ export const startKeepAliveCron = () => {
     cron.schedule('0 */5 * * * *', async () => {
       await keepServerAlive();
     }, {
-      scheduled: true,
       timezone: "UTC"
     });
     
