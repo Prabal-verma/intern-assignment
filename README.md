@@ -11,6 +11,7 @@ A full-stack web application featuring OTP-based authentication with Google OAut
 - **Responsive Design**: Mobile-first design with Tailwind CSS
 - **Protected Routes**: JWT-based route protection
 - **Email Integration**: Automated OTP delivery via email
+- **Keep-Alive System**: Automated server keep-alive for free hosting (Render)
 
 ## 🛠️ Tech Stack
 
@@ -238,6 +239,10 @@ assignment/
 
 ## 🌐 API Endpoints
 
+### Health & Monitoring Routes (`/api`)
+- `GET /health` - Server health check (used by keep-alive system)
+- `GET /ping` - Simple ping endpoint
+
 ### Authentication Routes (`/api/auth`)
 - `POST /signup` - Request OTP for registration
 - `POST /verify-signup` - Verify OTP and complete registration
@@ -255,6 +260,47 @@ assignment/
 - `POST /` - Create new note (protected)
 - `PUT /:id` - Update note (protected)
 - `DELETE /:id` - Delete note (protected)
+
+## 🔄 Keep-Alive System (For Free Hosting)
+
+This project includes a comprehensive keep-alive system to prevent free tier hosting services (like Render) from spinning down due to inactivity.
+
+### Built-in Keep-Alive (Automatic)
+- **Internal Cron Job**: Automatically pings the server every 5 minutes when deployed on Render
+- **Health Endpoint**: `/api/health` provides server status and uptime information
+- **Production Only**: Keep-alive only runs in production environment with `RENDER=true`
+
+### External Keep-Alive Options
+
+#### 1. Manual Script
+```bash
+# Set your deployed URL
+export RENDER_URL=https://your-app.onrender.com
+
+# Run the keep-alive script
+npm run keepalive
+```
+
+#### 2. External Cron Services
+Use services like **cron-job.org** or **EasyCron**:
+- **URL to ping**: `https://your-app.onrender.com/api/health`
+- **Interval**: Every 5-10 minutes
+- **Method**: GET
+- **User-Agent**: `External-KeepAlive`
+
+#### 3. GitHub Actions (Automated)
+The project includes a GitHub Actions workflow that automatically pings your server:
+- **File**: `.github/workflows/keepalive.yml`
+- **Schedule**: Every 5 minutes during active hours (6 AM - 11 PM UTC)
+- **Setup**: Add your Render URL to GitHub Secrets as `RENDER_URL`
+
+### Keep-Alive Configuration
+```env
+# In your .env file (automatically set by Render)
+RENDER_EXTERNAL_URL=https://your-app.onrender.com
+RENDER=true
+NODE_ENV=production
+```
 
 ## 🐛 Troubleshooting
 
@@ -300,6 +346,54 @@ npm run build    # Build for production
 npm run preview  # Preview production build
 npm run lint     # Run ESLint
 ```
+
+## 🚀 Deployment
+
+### Deploying to Render (Free Tier)
+
+1. **Push to GitHub**: Ensure your code is pushed to a GitHub repository
+
+2. **Create Render Account**: Sign up at [render.com](https://render.com)
+
+3. **Create New Web Service**:
+   - Connect your GitHub repository
+   - Choose the backend directory: `backend`
+   - Set build command: `npm install && npm run build`
+   - Set start command: `npm start`
+   - Choose free tier
+
+4. **Environment Variables**: Add these in Render dashboard:
+   ```
+   NODE_ENV=production
+   MONGODB_URI=your-mongodb-connection-string
+   JWT_SECRET=your-jwt-secret
+   EMAIL_USER=your-gmail@gmail.com
+   EMAIL_PASS=your-gmail-app-password
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   SESSION_SECRET=your-session-secret
+   ```
+
+5. **Domain Setup**: Render provides a free domain like `https://your-app.onrender.com`
+
+6. **Keep-Alive Setup**: The internal cron job will automatically start on deployment
+
+### Frontend Deployment (Netlify/Vercel)
+
+1. **Build the frontend**:
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+2. **Deploy dist folder** to Netlify, Vercel, or any static hosting
+
+3. **Update environment**: Set `VITE_API_URL` to your Render backend URL
+
+### Health Check
+After deployment, verify the keep-alive system:
+```bash
+curl https://your-app.onrender.com/api/health
 
 ## 🤝 Contributing
 

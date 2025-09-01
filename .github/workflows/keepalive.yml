@@ -1,0 +1,49 @@
+name: Keep Render Server Alive
+
+# This workflow keeps your Render free tier server alive
+# by pinging it every 5 minutes during active hours
+
+on:
+  schedule:
+    # Run every 5 minutes from 6 AM to 11 PM UTC (adjust timezone as needed)
+    # This prevents unnecessary pings during low-traffic hours
+    - cron: '*/5 6-23 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Keep server alive
+      run: |
+        echo "🏃 Pinging server to keep it alive..."
+        
+        # Replace with your actual Render URL
+        RENDER_URL="${{ secrets.RENDER_URL || 'https://your-app-name.onrender.com' }}"
+        
+        # Make HTTP request to health endpoint
+        response=$(curl -s -w "%{http_code}" -o /tmp/response.json \
+          --max-time 30 \
+          --user-agent "GitHub-Actions-KeepAlive" \
+          "${RENDER_URL}/api/health")
+        
+        if [ "$response" = "200" ]; then
+          echo "✅ Server is alive and responding"
+          
+          # Show server info if available
+          if [ -f /tmp/response.json ]; then
+            echo "📊 Server status:"
+            cat /tmp/response.json | jq -r '"Uptime: " + (.uptime | tonumber / 60 | floor | tostring) + " minutes"' 2>/dev/null || echo "Server responded successfully"
+          fi
+        else
+          echo "⚠️ Server responded with status code: $response"
+        fi
+        
+    - name: Cleanup
+      run: rm -f /tmp/response.json
